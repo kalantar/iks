@@ -1,0 +1,34 @@
+name: 'IBM Kubernetes Service'
+description: 'login'
+inputs:
+  IBM_CLOUD_API_KEY:
+    required: true
+  IBM_CLOUD_RESOURCE_GROUP:
+    required: true
+  IBM_CLOUD_REGION:
+    required: true
+  IKS_CLUSTER:
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Install latest version of IBM Cloud CLI
+      run: | 
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+        ibmcloud --version
+        ibmcloud config --check-version=false
+        ibmcloud plugin install -f kubernetes-service
+        ibmcloud plugin install -f container-registry
+
+    - name: Authenticate with IBM Cloud CLI
+      run: |
+        ibmcloud login --apikey "${{ inputs.IBM_CLOUD_API_KEY }}" -r "${{ inputs.IBM_CLOUD_REGION }}" -g default
+        ibmcloud cr region-set "${{ inputs.IBM_CLOUD_REGION }}"
+        ibmcloud cr login
+      
+    - name: Identify target cluster and set current-context
+      run: |
+        ibmcloud target -g ${{ inputs.IBM_CLOUD_RESOURCE_GROUP }}
+        ibmcloud ks cluster config --cluster ${{ inputs.IKS_CLUSTER }}
+        kubectl config current-context
+
